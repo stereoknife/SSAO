@@ -1,0 +1,6 @@
+1. pick pixel
+2. get spherical coordinates
+3. sample points around coordinate
+4. translate vectors to other picture coordinate
+5. get value
+6. accumulate
