@@ -185,6 +185,7 @@ class GLWidget : public QOpenGLWidget, protected QOpenGLFunctions_3_3_Core {
   float roughness_;
 
   GLuint ssao_bf;
+  GLuint ssao_a;
   GLuint ssao_n;
   GLuint ssao_d;
 

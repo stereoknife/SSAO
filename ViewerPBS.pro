@@ -43,6 +43,8 @@ FORMS    += \
 OTHER_FILES +=
 
 DISTFILES += \
+    shaders/geometry.frag \
+    shaders/geometry.vert \
     shaders/ibl-pbs.frag \
     shaders/ibl-pbs.vert \
     shaders/pbs.frag \
@@ -52,8 +54,6 @@ DISTFILES += \
     shaders/sky.frag \
     shaders/sky.vert \
     shaders/phong.frag \
-    shaders/phong.vert \
-    shaders/texMap.frag \
-    shaders/texMap.vert
+    shaders/phong.vert
 
 

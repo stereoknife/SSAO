@@ -21,7 +21,7 @@ const double kZFar = 10;
 
 const std::vector<std::vector<std::string>> kShaderFiles = {
                 {"../shaders/phong.vert",        "../shaders/phong.frag"},
-                {"../shaders/texMap.vert",       "../shaders/texMap.frag"},
+                {"../shaders/geometry.vert",       "../shaders/geometry.frag"},
                 {"../shaders/reflection.vert",   "../shaders/reflection.frag"},
                 {"../shaders/pbs.vert",          "../shaders/pbs.frag"},
                 {"../shaders/ibl-pbs.vert",      "../shaders/ibl-pbs.frag"},
@@ -157,7 +157,6 @@ bool GLWidget::LoadModel(const QString &filename) {
 
     // Bind VBOs to VAO
     glBindVertexArray(VAO);
-
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO_v);
     glBufferData(GL_ARRAY_BUFFER, sizeof(float) * mesh_->vertices_.size(), &mesh_->vertices_[0], GL_STATIC_DRAW);
@@ -308,8 +307,11 @@ void GLWidget::GenBufferTexture(GLuint buffer, GLuint* texture, GLenum attachmen
 
 void GLWidget::initializeGL ()
 {
+    makeCurrent();
+
   // Cal inicialitzar l'ús de les funcions d'OpenGL
   initializeOpenGLFunctions();
+    QOpenGLWidget::initializeGL();
 
   //initializing opengl state
   glEnable(GL_NORMALIZE);
@@ -325,19 +327,87 @@ void GLWidget::initializeGL ()
   glGenTextures(1, &metalness_map_);
 
 
+  /*
   // Create SSAO frame buffer
   glGenBuffers(1, &ssao_bf);
+  glBindFramebuffer(GL_FRAMEBUFFER, ssao_bf);
+  std::cout << "SSAO " << ssao_bf << std::endl;
+  std::cout << "DEFAULT  " << defaultFramebufferObject() << std::endl;
 
-  // Generate SSAO textures
-  GenBufferTexture(ssao_bf, &ssao_n, GL_COLOR_ATTACHMENT0, GL_RGB);
-  GenBufferTexture(ssao_bf, &ssao_d, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT);
+  width_ = width();
+  height_ = height();
 
+  // Albedo
+  glGenTextures(1, &ssao_a);
+  glBindTexture(GL_TEXTURE_2D, ssao_a);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width_, height_, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ssao_a, 0);
+  glBindTexture(GL_TEXTURE_2D, 0);
+
+  // Normals
+  glGenTextures(1, &ssao_n);
+  glBindTexture(GL_TEXTURE_2D, ssao_n);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width_, height_, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, ssao_n, 0);
+  glBindTexture(GL_TEXTURE_2D, 0);
+
+  // Depth
+  glGenTextures(1, &ssao_d);
+  glBindTexture(GL_TEXTURE_2D, ssao_d);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width_, height_, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, ssao_d, 0);
+  glBindTexture(GL_TEXTURE_2D, 0);
+
+  unsigned int rbo;
+  glGenRenderbuffers(1, &rbo);
+  glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 800, 600);
+  glBindRenderbuffer(GL_RENDERBUFFER, 0);
+  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+  */
+
+
+  //glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+  //*
   // Check attachment is valid
   glBindFramebuffer(GL_FRAMEBUFFER, ssao_bf);
-  if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-      std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
-  std::cout << ssao_bf << std::endl;
+    std::cout << "Initialize" << std::endl;
+  switch (glCheckFramebufferStatus(GL_FRAMEBUFFER)) {
+  case GL_FRAMEBUFFER_UNDEFINED:
+      std::cout << "GL_FRAMEBUFFER_UNDEFINED" << std::endl;
+      break;
+  case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+      std::cout << "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT" << std::endl;
+      break;
+  case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+      std::cout << "GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT" << std::endl;
+      break;
+  case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
+      std::cout << "GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER" << std::endl;
+      break;
+  case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:
+      std::cout << "GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER" << std::endl;
+      break;
+  case GL_FRAMEBUFFER_UNSUPPORTED:
+      std::cout << "GL_FRAMEBUFFER_UNSUPPORTED" << std::endl;
+  case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:
+      std::cout << "GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE" << std::endl;
+  case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS:
+      std::cout << "GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS" << std::endl;
+  default:
+      break;
+  }
+  std::cout << "no more Initialize" << std::endl;
+
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+//*/
 
   //create shader programs
   programs_.push_back(std::make_unique<QOpenGLShaderProgram>());//phong
@@ -431,6 +501,53 @@ void GLWidget::paintGL ()
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    glBindFramebuffer(GL_FRAMEBUFFER, ssao_bf);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        glGenBuffers(1, &ssao_bf);
+        glBindFramebuffer(GL_FRAMEBUFFER, ssao_bf);
+        std::cout << "SSAO " << ssao_bf << std::endl;
+        std::cout << "DEFAULT  " << defaultFramebufferObject() << std::endl;
+
+        //width_ = width();
+        //height_ = height();
+
+        // Albedo
+        glGenTextures(1, &ssao_a);
+        glBindTexture(GL_TEXTURE_2D, ssao_a);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width_, height_, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ssao_a, 0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+        // Normals
+        glGenTextures(1, &ssao_n);
+        glBindTexture(GL_TEXTURE_2D, ssao_n);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width_, height_, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, ssao_n, 0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+        // Depth
+        glGenTextures(1, &ssao_d);
+        glBindTexture(GL_TEXTURE_2D, ssao_d);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width_, height_, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, ssao_d, 0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+        unsigned int rbo;
+        glGenRenderbuffers(1, &rbo);
+        glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 800, 600);
+        glBindRenderbuffer(GL_RENDERBUFFER, 0);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebufferObject());
+    }
+
     if (initialized_) {
         camera_.SetViewport();
 
@@ -448,76 +565,40 @@ void GLWidget::paintGL ()
 
         if (mesh_ != nullptr) {
             GLint projection_location, view_location, model_location,
-            normal_matrix_location, specular_map_location, diffuse_map_location,
-            fresnel_location, color_map_location, roughness_map_location, metalness_map_location,
-            current_text_location, light_location, roughness_location, metalness_location;
+            normal_matrix_location, albedo_location, normal_location,
+            depth_location;
 
             //STEP-1----------------------------------------------------------------------------------------
 
             // Set ssao buffer
-            //glBindFramebuffer(GL_FRAMEBUFFER, ssao_bf);
-            //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            glBindFramebuffer(GL_FRAMEBUFFER, ssao_bf);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            /*
-            programs_[currentShader_]->bind();
+            //*
+            programs_[1]->bind();
 
             projection_location       = programs_[currentShader_]->uniformLocation("projection");
             view_location             = programs_[currentShader_]->uniformLocation("view");
             model_location            = programs_[currentShader_]->uniformLocation("model");
             normal_matrix_location    = programs_[currentShader_]->uniformLocation("normal_matrix");
-            specular_map_location     = programs_[currentShader_]->uniformLocation("specular_map");
-            diffuse_map_location      = programs_[currentShader_]->uniformLocation("diffuse_map");
-            color_map_location        = programs_[currentShader_]->uniformLocation("color_map");
-            roughness_map_location    = programs_[currentShader_]->uniformLocation("roughness_map");
-            metalness_map_location    = programs_[currentShader_]->uniformLocation("metalness_map");
-            current_text_location     = programs_[currentShader_]->uniformLocation("current_texture");
-            fresnel_location          = programs_[currentShader_]->uniformLocation("fresnel");
-            light_location            = programs_[currentShader_]->uniformLocation("light");
-            roughness_location        = programs_[currentShader_]->uniformLocation("roughness");
-            metalness_location        = programs_[currentShader_]->uniformLocation("metalness");
-
 
             glUniformMatrix4fv(projection_location, 1, GL_FALSE, &projection[0][0]);
             glUniformMatrix4fv(view_location, 1, GL_FALSE, &view[0][0]);
             glUniformMatrix4fv(model_location, 1, GL_FALSE, &model[0][0]);
             glUniformMatrix3fv(normal_matrix_location, 1, GL_FALSE, &normal[0][0]);
 
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_CUBE_MAP, specular_map_);
-            glUniform1i(specular_map_location, 0);
-
-            glActiveTexture(GL_TEXTURE1);
-            glBindTexture(GL_TEXTURE_CUBE_MAP, diffuse_map_);
-            glUniform1i(diffuse_map_location, 1);
-
-            glActiveTexture(GL_TEXTURE4);
-            glBindTexture(GL_TEXTURE_2D, color_map_);
-            glUniform1i(color_map_location, 4);
-
-            glActiveTexture(GL_TEXTURE5);
-            glBindTexture(GL_TEXTURE_2D, roughness_map_);
-            glUniform1i(roughness_map_location, 5);
-
-            glActiveTexture(GL_TEXTURE6);
-            glBindTexture(GL_TEXTURE_2D, metalness_map_);
-            glUniform1i(metalness_map_location, 6);
-
-            glUniform1i(current_text_location, 4 + currentTexture_);
-            glUniform3f(fresnel_location, fresnel_[0], fresnel_[1], fresnel_[2]);
-            glUniform3f(light_location, 10, 0, 0);
-            glUniform1f(roughness_location, roughness_);
-            glUniform1f(metalness_location, metalness_);
-
-            //glBindVertexArray(VAO);
-            //glDrawElements(GL_TRIANGLES, mesh_->faces_.size(), GL_UNSIGNED_INT, (GLvoid*)nullptr);
-            //glBindVertexArray(0);
+            glBindVertexArray(VAO);
+            glDrawElements(GL_TRIANGLES, mesh_->faces_.size(), GL_UNSIGNED_INT, (GLvoid*)nullptr);
+            glBindVertexArray(0);
 
             //STEP-2----------------------------------------------------------------------------------------
 
             // Bind and clear buffer
-*/
-            glBindFramebuffer(GL_FRAMEBUFFER, 1);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            //*/
+            //*
+
+            std::cout << "DEFAULT  " << defaultFramebufferObject() << std::endl;
 
             GLenum err;
 
@@ -551,28 +632,33 @@ void GLWidget::paintGL ()
                 std::cout << err << std::endl;
             }
 
+            glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebufferObject());
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
             model = camera_.SetIdentity();
 
             programs_[programs_.size()-1]->bind();
 
-            projection_location     = programs_[programs_.size()-1]->uniformLocation("projection");
-            view_location           = programs_[programs_.size()-1]->uniformLocation("view");
-            model_location          = programs_[programs_.size()-1]->uniformLocation("model");
-            normal_matrix_location  = programs_[programs_.size()-1]->uniformLocation("normal_matrix");
-            specular_map_location   = programs_[programs_.size()-1]->uniformLocation("specular_map");
-
-            glUniformMatrix4fv(projection_location, 1, GL_FALSE, &projection[0][0]);
-            glUniformMatrix4fv(view_location, 1, GL_FALSE, &view[0][0]);
-            glUniformMatrix4fv(model_location, 1, GL_FALSE, &model[0][0]);
-            glUniformMatrix3fv(normal_matrix_location, 1, GL_FALSE, &normal[0][0]);
+            albedo_location           = programs_[currentShader_]->uniformLocation("albedo_map");
+            normal_location           = programs_[currentShader_]->uniformLocation("normal_map");
+            depth_location            = programs_[currentShader_]->uniformLocation("depth_map");
 
             glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_CUBE_MAP, specular_map_);
-            glUniform1i(specular_map_location, 0);
+            glBindTexture(GL_TEXTURE_2D, ssao_a);
+            glUniform1i(albedo_location, 0);
+
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, ssao_n);
+            glUniform1i(albedo_location, 1);
+
+            glActiveTexture(GL_TEXTURE2);
+            glBindTexture(GL_TEXTURE_2D, ssao_d);
+            glUniform1i(albedo_location, 2);
 
             glBindVertexArray(VAO_sky);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (GLvoid*)0);
             glBindVertexArray(0);
+            //*/
 
         }
     }
